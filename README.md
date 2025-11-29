@@ -61,7 +61,7 @@
   - Recommandations adaptées aux enfants
   - Historique des conversations
 
-### 2. 🧠 Santé Mentale
+### 2.  Santé Mentale
 - **Chatbot Médical RAG**
   - Réponses contextuelles basées sur une base de connaissances médicales
   - Recherche sémantique dans les documents médicaux (FAISS + HuggingFace)
@@ -69,7 +69,7 @@
   - Support multilingue (français)
   - Historique et suivi des conversations
 
-### 3. 👨‍👩‍👧 Interface Utilisateur
+### 3. Interface Utilisateur
 - **Authentification**
   - Pages de connexion et inscription
   - Gestion des sessions utilisateur
@@ -87,14 +87,14 @@
   - Statistiques et analytics
   - Configuration des paramètres
 
-### 4. 📊 Rapports et Suivi
+### 4.  Rapports et Suivi
 - Génération de rapports de santé
 - Historique des consultations
 - Suivi de l'évolution nutritionnelle
 
 ---
 
-## 🚀 Étapes de Lancement du Projet
+##  Étapes de Lancement du Projet
 
 ### Prérequis
 - **Python 3.11+** (testé avec Python 3.13)
@@ -240,9 +240,6 @@ v0-mother-health-app-main/
 **Frontend :**
 - Next.js 16 (React 19)
 - TypeScript
-- TailwindCSS
-- Radix UI (composants accessibles)
-- Recharts (visualisations)
 
 **Backend :**
 - FastAPI (Python) + Uvicorn
@@ -250,7 +247,6 @@ v0-mother-health-app-main/
 - TensorFlow/Keras (ML)
 - LangChain + FAISS (RAG)
 - Groq API (Llama 3.1)
-- HuggingFace Embeddings
 
 
 
