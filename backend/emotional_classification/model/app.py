@@ -249,14 +249,13 @@ if st.button("🧠 Run Full Analysis", disabled=st.session_state.get("cleanup_re
 st.markdown("---")
 st.subheader("📥 Download Results")
 if st.session_state.get("cleanup_required", False):
-    zip_path = package_results_as_zip()
-    if zip_path and zip_path.exists():
-        with open(zip_path, "rb") as f:
+    if FINAL_PDF.exists():
+        with open(FINAL_PDF, "rb") as f:
             st.download_button(
-                label="📥 Download ZIP (PDF + Log)",
+                label="📥 Download PDF Report",
                 data=f,
-                file_name="soulsketch_analysis.zip",
-                mime="application/zip"
+                file_name="emotional_analysis_report.pdf",
+                mime="application/pdf"
             )
     else:
         st.info("ℹ️ Preparing your download... Please wait a few more seconds.")

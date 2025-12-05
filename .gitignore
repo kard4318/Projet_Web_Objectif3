@@ -23,6 +23,9 @@ venv/
 env/
 chatvenv/
 
+# emotion classification generated files
+backend/emotional_classification/model/shared_memory/
+
 # vercel
 .vercel
 

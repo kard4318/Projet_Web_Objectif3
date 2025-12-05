@@ -75,7 +75,7 @@ def run_script(script_path: Path, script_alias: str, verbose: bool = False, log_
     """
     import platform
 
-    header = f"▶ Running: {script_path}"
+    header = f"[RUNNING] {script_path}"
     divider = "=" * len(header)
 
     print(f"\n{header}")
@@ -102,14 +102,14 @@ def run_script(script_path: Path, script_alias: str, verbose: bool = False, log_
         log_file.write(output)
 
     if result.returncode != 0:
-        print(f"❌ Error in {script_alias}")
+        print(f"[ERROR] Error in {script_alias}")
         if log_file:
-            log_file.write(f"❌ Error in {script_alias}\n")
+            log_file.write(f"[ERROR] Error in {script_alias}\n")
         raise RuntimeError(f"Script failed: {script_alias}")
     else:
-        print(f"✅ Finished: {script_alias}")
+        print(f"[SUCCESS] Finished: {script_alias}")
         if log_file:
-            log_file.write(f"✅ Finished: {script_alias}\n\n")
+            log_file.write(f"[SUCCESS] Finished: {script_alias}\n\n")
 
 
 def run_analysis_flow(verbose: bool = True) -> dict:
@@ -129,13 +129,13 @@ def run_analysis_flow(verbose: bool = True) -> dict:
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     print("==================================================")
-    print("🚀 Starting Full Analysis Flow")
+    print("[START] Starting Full Analysis Flow")
     print("==================================================")
 
     with open(log_path, "w", encoding="utf-8") as log_file:
         log_file.write("==================================================\n")
-        log_file.write("🚀 Full Analysis Flow Log\n")
-        log_file.write(f"🕒 Started at: {timestamp}\n")
+        log_file.write("[START] Full Analysis Flow Log\n")
+        log_file.write(f"Started at: {timestamp}\n")
         log_file.write("==================================================\n")
 
         for step in FLOW_STEPS:
@@ -150,13 +150,23 @@ def run_analysis_flow(verbose: bool = True) -> dict:
             with open(FINAL_PDF, "rb") as f:
                 first_page = f.read(1000).decode("latin1", errors="ignore")
                 if "PDF generation failed due to invalid input" in first_page:
-                    log_file.write("⚠️  PDF fallback generated due to invalid input.\n")
+                    log_file.write("[WARNING] PDF fallback generated due to invalid input.\n")
                 else:
-                    log_file.write("✅ Full PDF report generated successfully.\n")
+                    log_file.write("[SUCCESS] Full PDF report generated successfully.\n")
         else:
-            log_file.write("❌ No PDF file found or file is empty.\n")
+            log_file.write("[ERROR] No PDF file found or file is empty.\n")
         log_file.write("==================================================\n")
 
     CURRENT_FLOW_STEP = "completed"
-    print(f"📄 Log saved to: {log_path.resolve()}")
+    print(f"[LOG] Log saved to: {log_path.resolve()}")
     return {"final_step": "completed"}
+
+
+if __name__ == "__main__":
+    try:
+        run_analysis_flow(verbose=True)
+        print("\n[SUCCESS] Analysis pipeline completed successfully!")
+        sys.exit(0)
+    except Exception as e:
+        print(f"\n[ERROR] Analysis pipeline failed: {e}")
+        sys.exit(1)

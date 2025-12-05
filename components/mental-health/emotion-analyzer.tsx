@@ -4,23 +4,15 @@ import type React from "react"
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Upload, Loader, AlertCircle } from "lucide-react"
-
-interface EmotionAnalysis {
-  emotions: {
-    name: string
-    score: number
-    color: string
-  }[]
-  summary: string
-  recommendations: string[]
-}
+import { Upload, Loader, AlertCircle, Download, FileText } from "lucide-react"
 
 export function EmotionAnalyzer() {
   const [image, setImage] = useState<string | null>(null)
-  const [analysis, setAnalysis] = useState<EmotionAnalysis | null>(null)
+  const [reportReady, setReportReady] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState("")
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -33,53 +25,71 @@ export function EmotionAnalyzer() {
       return
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError("L'image doit faire moins de 5MB")
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setError("L'image doit faire moins de 10MB")
       return
     }
 
     const reader = new FileReader()
     reader.onload = (event) => {
       setImage(event.target?.result as string)
+      setUploadedFile(file)
       setError("")
-      analyzeDrawing(event.target?.result as string)
+      setReportReady(false)
     }
     reader.readAsDataURL(file)
   }
 
-  const analyzeDrawing = async (imageData: string) => {
+  const analyzeDrawing = async () => {
+    if (!uploadedFile) return
+
     setLoading(true)
+    setAnalyzing(true)
     setError("")
+    setReportReady(false)
 
     try {
-      // TODO: Integrate with AI SDK for real image analysis
-      // For now, simulate analysis
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      // Step 1: Upload image
+      const formData = new FormData()
+      formData.append("image", uploadedFile)
 
-      const mockAnalysis: EmotionAnalysis = {
-        emotions: [
-          { name: "Joie", score: 0.85, color: "bg-yellow-500" },
-          { name: "Sérénité", score: 0.72, color: "bg-blue-500" },
-          { name: "Créativité", score: 0.68, color: "bg-purple-500" },
-          { name: "Anxiété", score: 0.15, color: "bg-red-500" },
-        ],
-        summary:
-          "Le dessin montre une expression créative positive avec des couleurs vives et des formes dynamiques. L'enfant semble être dans un état émotionnel stable et heureux.",
-        recommendations: [
-          "Encourager l'expression créative régulière",
-          "Maintenir les activités ludiques actuelles",
-          "Observer les changements dans les futurs dessins",
-        ],
+      const uploadResponse = await fetch("/api/emotion-analysis/upload", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!uploadResponse.ok) {
+        throw new Error("Échec du téléchargement de l'image")
       }
 
-      setAnalysis(mockAnalysis)
-    } catch (err) {
-      setError("Erreur lors de l'analyse. Veuillez réessayer.")
+      // Step 2: Run analysis
+      const analyzeResponse = await fetch("/api/emotion-analysis/analyze", {
+        method: "POST",
+      })
+
+      if (!analyzeResponse.ok) {
+        throw new Error("Échec de l'analyse")
+      }
+
+      const result = await analyzeResponse.json()
+      
+      if (result.success) {
+        setReportReady(true)
+      } else {
+        throw new Error(result.error || "Erreur lors de l'analyse")
+      }
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de l'analyse. Veuillez réessayer.")
       console.error(err)
     } finally {
       setLoading(false)
+      setAnalyzing(false)
     }
+  }
+
+  const downloadReport = () => {
+    window.open("/api/emotion-analysis/download", "_blank")
   }
 
   return (
@@ -92,7 +102,7 @@ export function EmotionAnalyzer() {
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
         <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
         <p className="font-medium text-foreground mb-2">Uploadez un dessin</p>
-        <p className="text-sm text-muted-foreground">Cliquez ou glissez-déposez une image (PNG, JPG, GIF)</p>
+        <p className="text-sm text-muted-foreground">Cliquez ou glissez-déposez une image (PNG, JPG)</p>
       </div>
 
       {error && (
@@ -113,76 +123,77 @@ export function EmotionAnalyzer() {
             />
           </div>
 
-          {loading && (
+          {/* Analyze Button */}
+          {!analyzing && !reportReady && (
+            <Button
+              onClick={analyzeDrawing}
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? (
+                <>
+                  <Loader className="w-4 h-4 mr-2 animate-spin" />
+                  Analyse en cours...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Lancer l'analyse émotionnelle
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Loading State */}
+          {analyzing && (
             <div className="flex items-center justify-center p-8 bg-muted/30 rounded-lg">
               <div className="text-center">
                 <Loader className="w-8 h-8 animate-spin mx-auto mb-2 text-primary" />
-                <p className="text-sm text-muted-foreground">Analyse en cours...</p>
+                <p className="text-sm text-muted-foreground">
+                  Analyse en cours... Cela peut prendre 1-2 minutes
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Détection des émotions, objets, expressions faciales et génération du rapport
+                </p>
               </div>
             </div>
           )}
 
-          {/* Analysis Results */}
-          {analysis && !loading && (
-            <div className="space-y-6">
-              {/* Emotions Chart */}
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-foreground mb-4">Émotions Détectées</h3>
-                  <div className="space-y-3">
-                    {analysis.emotions.map((emotion) => (
-                      <div key={emotion.name}>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium text-foreground">{emotion.name}</span>
-                          <span className="text-sm text-muted-foreground">{Math.round(emotion.score * 100)}%</span>
-                        </div>
-                        <div className="w-full bg-muted rounded-full h-2">
-                          <div
-                            className={`${emotion.color} h-2 rounded-full transition-all`}
-                            style={{ width: `${emotion.score * 100}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
+          {/* Report Ready */}
+          {reportReady && !analyzing && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center space-y-4">
+                  <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto">
+                    <FileText className="w-8 h-8 text-green-600 dark:text-green-400" />
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Summary */}
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-foreground mb-3">Résumé</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{analysis.summary}</p>
-                </CardContent>
-              </Card>
-
-              {/* Recommendations */}
-              <Card>
-                <CardContent className="pt-6">
-                  <h3 className="font-semibold text-foreground mb-3">Recommandations</h3>
-                  <ul className="space-y-2">
-                    {analysis.recommendations.map((rec, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
-                        <span className="text-primary font-bold text-sm mt-0.5">{idx + 1}.</span>
-                        <span className="text-sm text-muted-foreground">{rec}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-
-              {/* New Analysis Button */}
-              <Button
-                onClick={() => {
-                  setImage(null)
-                  setAnalysis(null)
-                  fileInputRef.current?.click()
-                }}
-                className="w-full btn-secondary"
-              >
-                Analyser un autre dessin
-              </Button>
-            </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground mb-2">
+                      Analyse Terminée !
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Votre rapport d'analyse émotionnelle est prêt
+                    </p>
+                  </div>
+                  <Button onClick={downloadReport} className="w-full">
+                    <Download className="w-4 h-4 mr-2" />
+                    Télécharger le Rapport PDF
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setImage(null)
+                      setReportReady(false)
+                      setUploadedFile(null)
+                      fileInputRef.current?.click()
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Analyser un autre dessin
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       )}
